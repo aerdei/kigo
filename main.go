@@ -21,20 +21,21 @@ func upload(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-	}
-	if len(b) > 15*kb {
+	} else if len(b) > 15*kb {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
+	} else {
+		cache.Add(uuid, 60*time.Minute, b)
+		fmt.Fprint(w, uuid)
 	}
-	cache.Add(uuid, 60*time.Minute, b)
-	fmt.Fprint(w, uuid)
 }
 
 func present(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	res, err := cache.Value(ps.ByName("uuid"))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
+	} else {
+		fmt.Fprintf(w, string(res.Data().([]byte)))
 	}
-	fmt.Fprintf(w, string(res.Data().([]byte)))
 }
 
 func main() {
